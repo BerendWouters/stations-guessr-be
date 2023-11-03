@@ -10,7 +10,7 @@ export class IrailService {
 
   getStations() {
     return this.httpClient.get<TrainStationResponse>(
-      `${this.baseUrl}/stations/?format=json&lang=en`
+      `${this.baseUrl}/stations/?format=json&lang=nl`
     );
   }
 }

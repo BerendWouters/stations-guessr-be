@@ -1,6 +1,21 @@
+<div class="top">
+  <mat-form-field class="example-full-width">
+    <mat-label>Station</mat-label>
+    <input
+      type="text"
+      placeholder="Station"
+      aria-label="Station"
+      matInput
+      [formControl]="myControl"
+    />
+  </mat-form-field>
+  <p class="score">{{ foundStations.length }} / {{ trainStations.length }}</p>
+</div>
 <div
   id="map"
   leaflet
   [leafletOptions]="options"
   [leafletLayers]="markers"
+  [(leafletCenter)]="center"
+  [(leafletZoom)]="zoom"
 ></div>

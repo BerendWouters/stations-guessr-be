@@ -2,3 +2,13 @@
   height: 80vh;
   margin: 8px;
 }
+
+.top {
+  display: flex;
+  margin: 8px;
+  align-items: center;
+  justify-content: space-around;
+  .score {
+    font-size: 26px;
+  }
+}
