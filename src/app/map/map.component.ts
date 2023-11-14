@@ -37,7 +37,6 @@ export class MapComponent implements OnChanges {
       const chng = changes[propName];
       if (propName === 'trainStations') {
         const trainStations = chng.currentValue as TrainStation[];
-
         this.myControl = new FormControl('', [
           existingStationNameValidator(trainStations),
         ]);
