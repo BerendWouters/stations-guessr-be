@@ -25,7 +25,7 @@ export class MapComponent implements OnChanges {
   };
   @Input() trainStations: TrainStation[] = [];
   myControl = new FormControl('', [
-    existingStationNameValidator(this.trainStations),
+    this.existingStationNameValidator(this.trainStations),
   ]);
 
   markers: Marker<any>[] = [];
@@ -39,7 +39,7 @@ export class MapComponent implements OnChanges {
         const trainStations = chng.currentValue as TrainStation[];
 
         this.myControl = new FormControl('', [
-          existingStationNameValidator(trainStations),
+          this.existingStationNameValidator(trainStations),
         ]);
       }
     }
@@ -60,8 +60,8 @@ export class MapComponent implements OnChanges {
 
   private markStationAsFound(): void {
     const controlValue = this.myControl.value;
-    const trainStation = this.trainStations.find(
-      (x) => x.name === controlValue
+    const trainStation = this.trainStations.find((x) =>
+      this.matcher(x, controlValue)
     );
     if (!trainStation || this.foundStations.includes(trainStation)) {
       return;
@@ -87,13 +87,15 @@ export class MapComponent implements OnChanges {
     this.snackbar.open(`You've found ${trainStation?.name}! 🚉`);
     this.myControl.setValue('');
   }
-}
 
-export function existingStationNameValidator(stations: TrainStation[]) {
-  return (control: AbstractControl): ValidationErrors | null => {
-    const match = stations.find(
-      (x) => x.name.toLocaleLowerCase() === control.value.toLocaleLowerCase()
-    );
-    return match ? null : { value: control.value };
-  };
+  private matcher(x: TrainStation, controlValue: string | null): unknown {
+    return x.name.toLocaleLowerCase() === controlValue?.toLocaleLowerCase();
+  }
+
+  private existingStationNameValidator(stations: TrainStation[]) {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const match = stations.find((x) => this.matcher(x, control.value));
+      return match ? null : { value: control.value };
+    };
+  }
 }
