@@ -98,4 +98,7 @@ export class MapComponent implements OnChanges {
       return match ? null : { value: control.value };
     };
   }
+  calculatePercentage(currentValue: number, maxValue: number) {
+    return (currentValue / maxValue) * 100;
+  }
 }
