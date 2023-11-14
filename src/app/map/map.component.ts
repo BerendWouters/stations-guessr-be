@@ -17,7 +17,8 @@ export class MapComponent implements OnChanges {
     layers: [
       tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
-        attribution: '...',
+        attribution:
+          'Map data from <a href="openstreetmap.org/copyright">OpenStreetMap</a>',
       }),
     ],
     zoom: 5,
