@@ -1,20 +1,29 @@
 <mat-card>
-  <mat-progress-bar
-    [value]="calculatePercentage(foundStations.length, trainStations.length)"
-  ></mat-progress-bar>
-  <div class="top">
-    <mat-form-field class="example-full-width">
-      <mat-label>Station</mat-label>
-      <input
-        type="text"
-        placeholder="Station"
-        aria-label="Station"
-        matInput
-        [formControl]="myControl"
-      />
-    </mat-form-field>
-    <p class="score">{{ foundStations.length }} / {{ trainStations.length }}</p>
-  </div>
+  <ng-container *ngIf="gameStateStore.state$ | async as state">
+    <mat-progress-bar
+      [value]="
+        calculatePercentage(
+          state.foundStations.length,
+          state.trainStations.length
+        )
+      "
+    ></mat-progress-bar>
+    <div class="top">
+      <mat-form-field class="example-full-width">
+        <mat-label>Station</mat-label>
+        <input
+          type="text"
+          placeholder="Station"
+          aria-label="Station"
+          matInput
+          [formControl]="stationControl"
+        />
+      </mat-form-field>
+      <p class="score">
+        {{ state.foundStations.length }} / {{ state.trainStations.length }}
+      </p>
+    </div></ng-container
+  >
 </mat-card>
 <div
   id="map"
