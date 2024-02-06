@@ -2,15 +2,16 @@ import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { tileLayer, latLng, marker, Marker, Icon, icon, LatLng } from 'leaflet';
 import { TrainStation } from '../service/irail.service';
 import { AbstractControl, FormControl, ValidationErrors } from '@angular/forms';
-import { distinctUntilChanged, filter, tap } from 'rxjs';
+import { distinctUntilChanged, filter, map, tap } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Game, GameStateStore } from '../service/game.service';
 
 @Component({
   selector: 'app-map',
   templateUrl: './map.component.html',
   styleUrls: ['./map.component.scss'],
 })
-export class MapComponent implements OnChanges {
+export class MapComponent {
   center = latLng(50.8431806, 4.3835893);
   zoom = 8;
   options = {
@@ -24,25 +25,34 @@ export class MapComponent implements OnChanges {
     zoom: 5,
     center: latLng(50.8431806, 4.3835893),
   };
-  @Input() trainStations: TrainStation[] = [];
-  myControl = new FormControl('', [
+  trainStations: TrainStation[] = [];
+  stationControl = new FormControl('', [
     this.existingStationNameValidator(this.trainStations),
   ]);
 
   markers: Marker<any>[] = [];
   foundStations: TrainStation[] = [];
-  constructor(private snackbar: MatSnackBar) {}
-
-  ngOnChanges(changes: SimpleChanges) {
-    for (const propName in changes) {
-      const chng = changes[propName];
-      if (propName === 'trainStations') {
-        const trainStations = chng.currentValue as TrainStation[];
-        this.myControl = new FormControl('', [
-          this.existingStationNameValidator(trainStations),
-        ]);
-      }
-    }
+  constructor(
+    private snackbar: MatSnackBar,
+    public gameStateStore: GameStateStore
+  ) {
+    this.gameStateStore.init();
+    this.gameStateStore.state$
+      .pipe(
+        tap((s) => {
+          this.trainStations = s.trainStations;
+          this.stationControl = new FormControl('', [
+            this.existingStationNameValidator(s.trainStations),
+          ]);
+          this.stationControl.statusChanges
+            .pipe(
+              filter((s) => s === 'VALID'),
+              tap((x) => this.play())
+            )
+            .subscribe();
+        })
+      )
+      .subscribe();
   }
 
   displayFn(station: TrainStation): string {
@@ -50,51 +60,52 @@ export class MapComponent implements OnChanges {
   }
 
   ngOnInit() {
-    this.myControl.statusChanges
+    this.gameStateStore.state$
       .pipe(
-        filter((s) => s === 'VALID'),
-        tap((x) => this.markStationAsFound())
+        map((s) => s.foundStations),
+        distinctUntilChanged(),
+        tap((s) => this.appendStations(s))
       )
       .subscribe();
   }
 
-  private markStationAsFound(): void {
-    const controlValue = this.myControl.value;
-    const trainStation = this.trainStations.find((x) =>
-      this.matcher(x, controlValue)
-    );
-    if (!trainStation || this.foundStations.includes(trainStation)) {
-      return;
+  play(): void {
+    const controlValue = this.stationControl.value;
+    if (controlValue) {
+      this.gameStateStore.play(controlValue);
+      this.stationControl.setValue('');
     }
-    const coords = latLng(
-      parseFloat(trainStation.locationY),
-      parseFloat(trainStation.locationX)
-    );
-    const trainStationMarker = marker(coords, {
-      title: trainStation.name,
-      icon: icon({
-        ...Icon.Default.prototype.options,
-        iconUrl: 'assets/marker-icon.png',
-        iconRetinaUrl: 'assets/marker-icon-2x.png',
-        shadowUrl: 'assets/marker-shadow.png',
-      }),
-    });
-
-    this.markers.push(trainStationMarker);
-    this.center = coords;
-    this.zoom = 13;
-    this.foundStations.push(trainStation);
-    this.snackbar.open(`You've found ${trainStation?.name}! 🚉`);
-    this.myControl.setValue('');
   }
+  private appendStations(trainStations: TrainStation[]) {
+    console.log(trainStations);
+    this.markers = [];
+    trainStations.forEach((trainStation) => {
+      const coords = latLng(
+        parseFloat(trainStation.locationY),
+        parseFloat(trainStation.locationX)
+      );
+      const trainStationMarker = marker(coords, {
+        title: trainStation.name,
+        icon: icon({
+          ...Icon.Default.prototype.options,
+          iconUrl: 'assets/marker-icon.png',
+          iconRetinaUrl: 'assets/marker-icon-2x.png',
+          shadowUrl: 'assets/marker-shadow.png',
+        }),
+      });
 
-  private matcher(x: TrainStation, controlValue: string | null): unknown {
-    return x.name.toLocaleLowerCase() === controlValue?.toLocaleLowerCase();
+      this.markers.push(trainStationMarker);
+      this.center = coords;
+      this.zoom = 13;
+      this.snackbar.open(`You've found ${trainStation?.name}! 🚉`);
+    });
   }
 
   private existingStationNameValidator(stations: TrainStation[]) {
     return (control: AbstractControl): ValidationErrors | null => {
-      const match = stations.find((x) => this.matcher(x, control.value));
+      const match = stations.find((x) =>
+        this.gameStateStore.matcher(x, control.value)
+      );
       return match ? null : { value: control.value };
     };
   }
