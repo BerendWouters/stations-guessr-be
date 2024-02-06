@@ -2,10 +2,14 @@ import { Injectable } from '@angular/core';
 import { IrailService, TrainStation } from './irail.service';
 import { Observable, map, tap } from 'rxjs';
 import { Store } from 'rxjs-observable-store';
+import { LocalStorageService } from './localStorage.service';
 
 @Injectable({ providedIn: 'root' })
 export class GameStateStore extends Store<Game> {
-  constructor(private irailService: IrailService) {
+  constructor(
+    private irailService: IrailService,
+    private localStorageService: LocalStorageService
+  ) {
     super(new Game());
   }
 
@@ -18,8 +22,16 @@ export class GameStateStore extends Store<Game> {
           this.setState({
             ...this.state,
             trainStations: r,
-            foundStations: [],
           });
+
+          const foundStations = this.localStorageService.load();
+
+          if (foundStations) {
+            this.setState({
+              ...this.state,
+              foundStations: foundStations,
+            });
+          }
         })
       )
       .subscribe();
@@ -37,7 +49,6 @@ export class GameStateStore extends Store<Game> {
     const trainStation = this.state.trainStations.find((x) =>
       this.matcher(x, value)
     );
-    console.log(trainStation);
     if (!trainStation || this.state.foundStations.includes(trainStation)) {
       return;
     }
@@ -45,6 +56,7 @@ export class GameStateStore extends Store<Game> {
       ...this.state,
       foundStations: [...this.state.foundStations, trainStation],
     });
+    this.localStorageService.save(this.state.foundStations);
     return trainStation;
   }
 }

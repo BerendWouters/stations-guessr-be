@@ -73,11 +73,9 @@ export class MapComponent {
     const controlValue = this.stationControl.value;
     if (controlValue) {
       this.gameStateStore.play(controlValue);
-      this.stationControl.setValue('');
     }
   }
   private appendStations(trainStations: TrainStation[]) {
-    console.log(trainStations);
     this.markers = [];
     trainStations.forEach((trainStation) => {
       const coords = latLng(
@@ -98,6 +96,7 @@ export class MapComponent {
       this.center = coords;
       this.zoom = 13;
       this.snackbar.open(`You've found ${trainStation?.name}! 🚉`);
+      this.stationControl.setValue('');
     });
   }
 
