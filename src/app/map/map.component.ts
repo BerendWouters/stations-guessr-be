@@ -1,6 +1,19 @@
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
-import { tileLayer, latLng, marker, Marker, Icon, icon, LatLng } from 'leaflet';
-import { TrainStation } from '../service/irail.service';
+import {
+  tileLayer,
+  latLng,
+  marker,
+  Marker,
+  Icon,
+  icon,
+  LatLng,
+  polyline,
+} from 'leaflet';
+import {
+  ConnectionResponse,
+  IrailService,
+  TrainStation,
+} from '../service/irail.service';
 import { AbstractControl, FormControl, ValidationErrors } from '@angular/forms';
 import { distinctUntilChanged, filter, map, tap } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -30,11 +43,12 @@ export class MapComponent {
     this.existingStationNameValidator(this.trainStations),
   ]);
 
-  markers: Marker<any>[] = [];
+  markers: any[] = [];
   foundStations: TrainStation[] = [];
   constructor(
     private snackbar: MatSnackBar,
-    public gameStateStore: GameStateStore
+    public gameStateStore: GameStateStore,
+    private iRailService: IrailService
   ) {
     this.gameStateStore.init();
     this.gameStateStore.state$
@@ -92,6 +106,26 @@ export class MapComponent {
         }),
       });
 
+      this.iRailService
+        .getLiveBoard(trainStation.id)
+        .pipe(
+          tap((l) => {
+            const connections = l.departures.departure.map((d) => d.station);
+            connections.forEach((connectionStation) => {
+              const id = trainStation.name;
+              this.iRailService
+                .getConnection(id, connectionStation)
+                .pipe(
+                  tap((c) => {
+                    this.renderConnections(trainStation, c);
+                  })
+                )
+                .subscribe();
+            });
+          })
+        )
+        .subscribe();
+
       this.markers.push(trainStationMarker);
       this.center = coords;
       this.zoom = 13;
@@ -110,5 +144,33 @@ export class MapComponent {
   }
   calculatePercentage(currentValue: number, maxValue: number) {
     return (currentValue / maxValue) * 100;
+  }
+
+  renderConnections(
+    trainStation: TrainStation,
+    connection: ConnectionResponse
+  ) {
+    if (!connection.connection[0]?.departure?.stops) {
+      return;
+    }
+    const allCoords = [
+      latLng(
+        parseFloat(trainStation.locationY),
+        parseFloat(trainStation.locationX)
+      ),
+      ...connection.connection[0].departure.stops.stop.map((s) => {
+        console.log(s);
+        return latLng(
+          parseFloat(s.stationinfo.locationY),
+          parseFloat(s.stationinfo.locationX)
+        );
+      }),
+    ];
+    console.log(allCoords);
+    const lat = polyline(allCoords, {
+      color:
+        '#' + (0x1000000 + Math.random() * 0xffffff).toString(16).substr(1, 6),
+    });
+    this.markers.push(lat);
   }
 }
