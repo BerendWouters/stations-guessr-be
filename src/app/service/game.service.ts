@@ -41,8 +41,8 @@ export class GameStateStore extends Store<Game> {
     return stations.filter((s) => s.id.startsWith('BE.NMBS.0088'));
   }
 
-  matcher(x: TrainStation, controlValue: string | null): unknown {
-    return x.name.toLocaleLowerCase() === controlValue?.toLocaleLowerCase();
+  matcher(x: TrainStation, input: string | null): unknown {
+    return x.name.toLocaleLowerCase() === input?.toLocaleLowerCase();
   }
 
   play(value: string) {
