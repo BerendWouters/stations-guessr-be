@@ -159,14 +159,12 @@ export class MapComponent {
         parseFloat(trainStation.locationX)
       ),
       ...connection.connection[0].departure.stops.stop.map((s) => {
-        console.log(s);
         return latLng(
           parseFloat(s.stationinfo.locationY),
           parseFloat(s.stationinfo.locationX)
         );
       }),
     ];
-    console.log(allCoords);
     const lat = polyline(allCoords, {
       color:
         '#' + (0x1000000 + Math.random() * 0xffffff).toString(16).substr(1, 6),
